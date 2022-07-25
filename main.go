@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ftpserver/server"
-	"ftpserver/xcore/xlog"
+	"ftpServer/server"
+	"ftpServer/xcore/xlog"
 )
 
 func main() {

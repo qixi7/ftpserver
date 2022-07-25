@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"ftpserver/global"
-	"ftpserver/xcore/xlog"
+	"ftpServer/global"
+	"ftpServer/xcore/xlog"
 	"net/http"
 	"os"
 	"path/filepath"

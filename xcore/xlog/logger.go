@@ -2,7 +2,7 @@ package xlog
 
 import (
 	"errors"
-	"ftpserver/xcore/xlog/lumberjack-2.0"
+	"ftpServer/xcore/xlog/lumberjack-2.0"
 	"sync"
 	"sync/atomic"
 	"time"

@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"ftpserver/global"
-	"ftpserver/xcore/xlog"
+	"ftpServer/global"
+	"ftpServer/xcore/xlog"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -30,6 +30,9 @@ func (s *FtpServer) StartServer() error {
 	http.HandleFunc("/debug", func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = fmt.Fprintf(writer, "golang大法好!")
 	})
+	// 检查资源文件夹是否存在, 不存在就新建
+	checkAndCreateDir(global.FileDir)
+	checkAndCreateDir(global.ResDir)
 	selfIP := global.GetIP()
 	http.Handle(global.FileDirPre, http.StripPrefix(global.FileDirPre, http.FileServer(http.Dir(global.FileDir))))
 	http.Handle(global.ResDirPre, http.StripPrefix(global.ResDirPre, http.FileServer(http.Dir(global.ResDir))))
@@ -44,6 +47,17 @@ func (s *FtpServer) StartServer() error {
 		return err
 	}
 	return nil
+}
+
+func checkAndCreateDir(path string) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		// create dir
+		err = os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			xlog.Fatalf("checkAndCreateDir path=%s, err=%s", path, err)
+		}
+	}
 }
 
 // 开启检测定时器, 删除5天前的日志, 只保留5天

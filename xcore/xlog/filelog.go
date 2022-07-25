@@ -2,7 +2,7 @@ package xlog
 
 import (
 	"encoding/json"
-	"ftpserver/xcore/xlog/lumberjack-2.0"
+	"ftpServer/xcore/xlog/lumberjack-2.0"
 	"log"
 	"time"
 )
