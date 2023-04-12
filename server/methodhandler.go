@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ftpServer/global"
 	"ftpServer/xcore/xlog"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -100,36 +101,36 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		// todo.暂不需要去支持传文件
 		//get the *fileheaders
-		//files := m.File["uploadfile"]
-		//for i, _ := range files {
-		//	//for each fileheader, get a handle to the actual file
-		//	file, err := files[i].Open()
-		//	if err != nil {
-		//		file.Close()
-		//		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//		xlog.Errorf("Open index=%d File err=%v", i, err)
-		//		return
-		//	}
-		//	//create destination file making sure the path is writeable.
-		//	dst, err := os.Create(folderPath + "/" + files[i].Filename)
-		//	if err != nil {
-		//		file.Close()
-		//		dst.Close()
-		//		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//		xlog.Errorf("Create file index=%d, folderPath=%s, Filename=%s File err=%v",
-		//			i, folderPath, files[i].Filename, err)
-		//		return
-		//	}
-		//	//copy the uploaded file to the destination file
-		//	if _, err := io.Copy(dst, file); err != nil {
-		//		file.Close()
-		//		dst.Close()
-		//		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//		xlog.Errorf("Copy file index=%d, folderPath=%s, Filename=%s File err=%v",
-		//			i, folderPath, files[i].Filename, err)
-		//		return
-		//	}
-		//}
+		files := m.File["uploadfile"]
+		for i, _ := range files {
+			//for each fileheader, get a handle to the actual file
+			file, err := files[i].Open()
+			if err != nil {
+				file.Close()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				xlog.Errorf("Open index=%d File err=%v", i, err)
+				return
+			}
+			//create destination file making sure the path is writeable.
+			dst, err := os.Create(folderPath + "/" + files[i].Filename)
+			if err != nil {
+				file.Close()
+				dst.Close()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				xlog.Errorf("Create file index=%d, folderPath=%s, Filename=%s File err=%v",
+					i, folderPath, files[i].Filename, err)
+				return
+			}
+			//copy the uploaded file to the destination file
+			if _, err := io.Copy(dst, file); err != nil {
+				file.Close()
+				dst.Close()
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				xlog.Errorf("Copy file index=%d, folderPath=%s, Filename=%s File err=%v",
+					i, folderPath, files[i].Filename, err)
+				return
+			}
+		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
