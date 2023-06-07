@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"time"
 )
 
 var regNet *regexp.Regexp         // 网络统计正则
@@ -81,8 +80,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		//get a ref to the parsed multipart form
 		m := r.MultipartForm
 
-		today := time.Now().Format(global.TimeFormat)
-		folderPath := filepath.Join(global.FileDir, today)
+		//today := time.Now().Format(global.TimeFormat)
+		//folderPath := filepath.Join(global.FileDir, today)
+		folderPath := filepath.Join(global.FileDir)
 		// get the pure file text
 		for key, sliceStr := range m.Value {
 			ok, filePath := fillFilePath(key)
