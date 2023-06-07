@@ -10,7 +10,7 @@ import (
 )
 
 const TimeFormat = "20060102"  // time格式化字符串
-const DelDayOffset = 10        // 过去多少天的日志文件夹删除
+const DelDayOffset = 30        // 过去多少天的日志文件夹删除
 const FileDir = "./filedir"    // 对外文件系统文件夹
 const FileDirPre = "/filedir/" // 对外文件系统文件夹
 const ResDir = "./resdir/"     // 资源文件夹

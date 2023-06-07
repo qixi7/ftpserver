@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"ftpServer/global"
 	"ftpServer/xcore/xlog"
 	"io"
@@ -12,41 +11,60 @@ import (
 	"time"
 )
 
-var regNet *regexp.Regexp       // 网络统计正则
-var regClientLog *regexp.Regexp // 客户端日志正则
+var regNet *regexp.Regexp         // 网络统计正则
+var regClientLog *regexp.Regexp   // 客户端日志正则
+var hashErrRoomLog *regexp.Regexp // 客户端日志正则
 
 var netLogString = `网络统计`
 var clientLogString = `客户端日志`
+var hashErrRoomString = `_(room_\d+)`
 
 func init() {
 	regNet = regexp.MustCompile(netLogString)
 	regClientLog = regexp.MustCompile(clientLogString)
+	hashErrRoomLog = regexp.MustCompile(hashErrRoomString)
 }
 
 func fillFilePath(fileName string) (bool, string) {
 	if regNet.MatchString(fileName) {
-		return true, fmt.Sprintf("网络统计/%s", fileName)
+		return true, filepath.Join("网络统计", fileName)
 	}
 	if regClientLog.MatchString(fileName) {
-		return true, fmt.Sprintf("客户端日志/%s", fileName)
+		return true, filepath.Join("客户端日志", fileName)
+	}
+	if subMatch := hashErrRoomLog.FindStringSubmatch(fileName); len(subMatch) > 1 {
+		return true, filepath.Join(subMatch[1], fileName)
 	}
 	return false, fileName
 }
 
 // 建文件夹
-func makeDir(dirPath, today string) bool {
+func makeDir(dirPath string) bool {
 	var err error
+	if _, err = os.Stat(dirPath); err == nil || os.IsExist(err) {
+		// 已经存在
+		return true
+	}
 	// 创建文件夹
 	if err = os.MkdirAll(filepath.Join(dirPath), 0777); err != nil {
-		xlog.Errorf("Mkdir err=%v, today=%s, newDir=%s", err, today, dirPath)
+		xlog.Errorf("Mkdir err=%v, newDir=%s", err, dirPath)
 		return false
 	}
 	// 修改权限
 	if err = os.Chmod(dirPath, 0777); err != nil {
-		xlog.Errorf("Chmod err=%v, today=%s, newDir=%s", err, today, dirPath)
+		xlog.Errorf("Chmod err=%v, newDir=%s", err, dirPath)
 		return false
 	}
 	return true
+}
+
+// 带路径的文件
+func createFileWithDir(fullPath string) (*os.File, error) {
+	fPath, _ := filepath.Split(fullPath)
+	// 创建路径
+	makeDir(fPath)
+	// 创建文件
+	return os.Create(fullPath)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,18 +82,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		m := r.MultipartForm
 
 		today := time.Now().Format(global.TimeFormat)
-		folderPath := filepath.Join(global.FileDir, "/", today)
-		if _, err = os.Stat(folderPath); os.IsNotExist(err) {
-			if !makeDir(fmt.Sprintf("%s/%s", folderPath, netLogString), today) {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if !makeDir(fmt.Sprintf("%s/%s", folderPath, clientLogString), today) {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-
+		folderPath := filepath.Join(global.FileDir, today)
 		// get the pure file text
 		for key, sliceStr := range m.Value {
 			ok, filePath := fillFilePath(key)
@@ -83,7 +90,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				xlog.Errorf("fileName=%s, can not parse dir.", key)
 				continue
 			}
-			dst, err := os.Create(folderPath + "/" + filePath)
+			dst, err := createFileWithDir(filepath.Join(folderPath, filePath))
 			if err != nil {
 				xlog.Errorf("Create filePath=%s, file=%s, err=%v", filePath, key, err)
 				dst.Close()
@@ -112,13 +119,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			//create destination file making sure the path is writeable.
-			dst, err := os.Create(folderPath + "/" + files[i].Filename)
+			_, filePath := fillFilePath(files[i].Filename)
+			dst, err := createFileWithDir(filepath.Join(folderPath, filePath))
 			if err != nil {
 				file.Close()
 				dst.Close()
 				http.Error(w, err.Error(), http.StatusInternalServerError)
-				xlog.Errorf("Create file index=%d, folderPath=%s, Filename=%s File err=%v",
-					i, folderPath, files[i].Filename, err)
+				xlog.Errorf("Create file index=%d, filePath=%s, Filename=%s File err=%v",
+					i, filePath, files[i].Filename, err)
 				return
 			}
 			//copy the uploaded file to the destination file
@@ -126,8 +134,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				file.Close()
 				dst.Close()
 				http.Error(w, err.Error(), http.StatusInternalServerError)
-				xlog.Errorf("Copy file index=%d, folderPath=%s, Filename=%s File err=%v",
-					i, folderPath, files[i].Filename, err)
+				xlog.Errorf("Copy file index=%d, filePath=%s, Filename=%s File err=%v",
+					i, filePath, files[i].Filename, err)
 				return
 			}
 		}
